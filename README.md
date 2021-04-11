@@ -3,7 +3,7 @@ Fedish is a POSIX sh client for Pleroma
   > There is not mastodon support... this is due to API issues...
 # Setup
 
-1. ```
+```
 $ git clone https://github.com/ThatGeekyWeeb/fedish.git
 $ cd fedish
 $ ./fedish gen "<INSTANCE URL (WITH HTTP(S)://)>"
