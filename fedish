@@ -1,0 +1,36 @@
+#!/bin/sh
+
+usage() {
+  cat << 'EOF'
+Fedish: 
+  ~ POSIX sh pleroma client
+    ~ THERE IS NO MASTODON SUPPORT. THIS IS DUE TO IT'S API LACKING REFRESH_TOKEN's
+Usage:
+  echo "THIS IS A POST..." | <DIR>/post
+---
+  Fedish is operated using a system of symlinks to the file & the use of $0
+---
+  <DIR>/post:
+    Takes piped string, and attempts to create a post from it's contents
+  <DIR>/timeline/<>:
+    When run, will attempt to return the timeline of <> to stdout
+---
+EOF
+}
+post() {
+  [ $1 ] && [ $1 = "help" ] && usage; exit 0
+}
+[ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
+  . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" # source authkeys...
+} || {
+  echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
+} 
+case "$(basename $0)" in
+  fedish)
+    usage
+    exit 1
+    ;;
+  post)
+    post $@
+    ;;
+esac
