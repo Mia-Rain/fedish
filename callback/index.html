@@ -78,6 +78,6 @@ var authT = {
 };
 //
 authT.access_token;
-document.getElementById("authkey").innerText= 'REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC; 
-download('REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC, 'authkeys', 'text/plain')
+document.getElementById("authkey").innerText= 'REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL; 
+download('REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL, 'authkeys', 'text/plain');
 </script>
