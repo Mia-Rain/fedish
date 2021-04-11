@@ -26,7 +26,7 @@ function grab() {
         data: {
           scope: scopes,
           redirect_uri: "urn:ietf:wg:oauth:2.0:oob",
-          response_type: code,
+          response_type: 'code',
         },
         success: function (response, data) {
           console.log(response);
