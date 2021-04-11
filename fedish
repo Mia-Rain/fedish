@@ -1,5 +1,30 @@
 #!/bin/sh
-
+has() {
+	case "$(command -v $1 2>/dev/null)" in
+		alias*|"") return 1
+	esac
+}
+deps() {
+  missing=0
+  for i in jq curl; do
+    has $i || {
+      echo "$i is missing"; missing=$(($missing + 1))
+    }
+    [ $missing -gt 0 ] && {
+      exit 1
+    }
+  done
+}
+auth() {
+[ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
+  . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" # source authkeys...
+} || {
+  echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
+}
+export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
+# curl -sX "GET" -H "Authorization: Bearer $AUTHKEY" -L "${URL}/api/v1/accounts/verify_credentials" 
+# always fails?
+}
 usage() {
   cat << 'EOF'
 Fedish: 
@@ -13,24 +38,42 @@ Usage:
   <DIR>/post:
     Takes piped string, and attempts to create a post from it's contents
   <DIR>/timeline/<>:
-    When run, will attempt to return the timeline of <> to stdout
+    When ran, will attempt to return the timeline of <> to stdout
+  # Missing ATM...
+  ./fedish gen <URL>
+    Generate a new app using <URL> as the instance URL
 ---
 EOF
 }
-post() {
-  [ $1 ] && [ $1 = "help" ] && usage; exit 0
+runpost() {
+  [ "$1" = "help" ] && { usage; exit 0; }
+  postemp=$(mktemp); cat > $postemp 
+  grep . -q $postemp && { 
+    # check if pipe is empty..
+    IFS=""; printf 'POST IS:\n%s' "$(cat $postemp)"; echo
+    curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(cat $postemp)" -L "${URL}/api/v1/statuses" >/dev/null 2>&1
+  } || {
+    echo "PIPE WAS FOUND TO BE EMPTY, CANNOT POST..."; exit 1
+  }
+  rm $postemp
 }
-[ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
-  . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" # source authkeys...
-} || {
-  echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
-} 
+
+####
+# Begin
+deps
+auth
+[ $USERKEY ] || { echo "USERKEY IS EMPTY... FAILING..."; exit 1; }
+[ "$1" ] && [ "$1" = "gen" ] && {
+  curl -X POST -d client_name=fedish -d redirect_uris="https://thatgeekyweeb.is-dummy-thi.cc/fedish/callback" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
+  exit 0
+}  
 case "$(basename $0)" in
   fedish)
     usage
     exit 1
     ;;
   post)
-    post $@
+    echo "Postin'..."
+    runpost "$@"
     ;;
 esac
