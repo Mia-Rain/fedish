@@ -19,11 +19,10 @@ auth() {
 [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
   . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" # source authkeys...
 } || {
-  echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
+   echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
 }
 export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
-# curl -sX "GET" -H "Authorization: Bearer $AUTHKEY" -L "${URL}/api/v1/accounts/verify_credentials" 
-# always fails?
+curl -sX "GET" -H "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" 
 }
 usage() {
   cat << 'EOF'
@@ -61,9 +60,9 @@ runpost() {
 ####
 # Begin
 deps
-auth
+[ "$1" = 'gen' ] || auth
 [ $USERKEY ] || { echo "USERKEY IS EMPTY... FAILING..."; exit 1; }
-[ "$1" ] && [ "$1" = "gen" ] && {
+[ "$1" = "gen" ] && {
   curl -X POST -d client_name=fedish -d redirect_uris="https://thatgeekyweeb.is-dummy-thi.cc/fedish/callback" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
   exit 0
 }  
