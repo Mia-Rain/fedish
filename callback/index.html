@@ -1,0 +1,83 @@
+<body>
+<a href="" id="a">Click to save AUTHKEYS</a>
+<div id="authkey">
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<script>
+function download(text, name, type) {
+  var a = document.getElementById("a");
+  var file = new Blob([text], {type: type});
+  a.href = URL.createObjectURL(file);
+  a.download = name;
+}
+var urlParams = new URLSearchParams(window.location.search);
+console.log(urlParams.get('code'));
+const code = urlParams.get('code');
+const CLID = sessionStorage.getItem('CLID');
+const CLSEC = sessionStorage.getItem('CLSEC');
+const URL = sessionStorage.getItem('URL');
+
+/*TOKEN GEN*/ $.ajax({
+  type: "POST",
+  url: URL + "/oauth/token",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  contentType: "application/x-www-form-urlencoded; charset=utf-8",
+  dataType: "json",
+  data: {
+    client_id: CLID,
+    client_secret: CLSEC,
+    redirect_uri: "https://www.thatgeekyweeb.is-dummy-thi.cc/fedish/callback/",
+    code,
+    grant_type: "authorization_code",
+  },
+  success: function (response, data) {
+    console.log(response);
+    console.log(data);
+    sessionStorage.setItem("refresh_token", response.refresh_token);
+  },
+});
+window.refresh_token = sessionStorage.getItem('refresh_token');
+var authT = {
+  get refresh_token() {
+    return sessionStorage.getItem("refresh_token");
+  },
+  get access_token() {
+  /*  while (true) {
+      try {
+        return this._access_token();
+      } catch (err) {
+        continue;
+      }
+    }
+  },
+  _access_token() { */// I have to disable DB's snippet since it causes more errors
+    $.ajax({
+      type: "POST",
+      url: URL + "/oauth/token",
+      contentType: "application/x-www-form-urlencoded",
+      //crossDomain: true,
+      dataType: "json",
+      data: {
+        client_id: sessionStorage.getItem("CLID"),
+        client_secret: sessionStorage.getItem("CLSEC"),
+        grant_type: "refresh_token",
+        refresh_token: authT.refresh_token,
+      },
+      success: function (response, data) {
+        sessionStorage.setItem("access_token", response.access_token);
+      },
+      error: function (xhr, ajaxOptions, thrownError) {
+        //throw "error in auth()";
+        console.log("error in auth()");
+      },
+    });
+    return sessionStorage.getItem("access_token");
+  },
+};
+//
+authT.access_token;
+document.getElementById("authkey").innerText= 'REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC; 
+download('REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC, 'authkeys', 'text/plain')
+</script>
