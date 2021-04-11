@@ -1,17 +1,10 @@
 <body>
-<a href="" id="a">Click to save AUTHKEYS</a>
 <div id="authkey">
 </div>
 </body>
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <script>
-function download(text, name, type) {
-  var a = document.getElementById("a");
-  var file = new Blob([text], {type: type});
-  a.href = URL.createObjectURL(file);
-  a.download = name;
-}
 var urlParams = new URLSearchParams(window.location.search);
 console.log(urlParams.get('code'));
 const code = urlParams.get('code');
@@ -23,7 +16,7 @@ const URL = sessionStorage.getItem('URL');
   type: "POST",
   url: URL + "/oauth/token",
   headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  contentType: "application/x-www-form-urlencoded; charset=utf-8",
+  contentType: "application/x-wwwz-form-urlencoded; charset=utf-8",
   dataType: "json",
   data: {
     client_id: CLID,
@@ -78,6 +71,12 @@ var authT = {
 };
 //
 authT.access_token;
+console.log(authT.refresh_token);
+function define() {
 document.getElementById("authkey").innerText= 'REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL; 
-download('REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL, 'authkeys', 'text/plain');
+}
+define();
+if (document.getElementById("authkey").innerText.includes("null")) {
+  define();
+}
 </script>
