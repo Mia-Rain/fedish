@@ -1,34 +1,32 @@
 #!/bin/sh
 has() {
-	case "$(command -v $1 2>/dev/null)" in
-		alias*|"") return 1
-	esac
+  case "$(command -v $1 2>/dev/null)" in
+    alias*|"") return 1
+  esac
 }
 deps() {
   missing=0
   for i in jq curl pup; do
-    has $i || {
-      echo "$i is missing"; missing=$(($missing + 1))
-    }
-    [ $missing -gt 0 ] && {
-      exit 1
-    }
+    has $i || { echo "$i is missing"; missing=$((missing + 1)); }
+    [ $missing -gt 0 ] && exit 1
   done
 }
 auth() {
-[ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
-  . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" # source authkeys...
-} || {
-   echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
-}
-export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
-CHURL=$(curl -sH "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" | jq .url -r | sed 's/users.*//')
-[ "$CHURL" != "$URL" ] && {
-  echo "ERROR: CHURL AND URL DO NOT MATCH... POSSIBLE VERIFICATION ISSUE"
-  IFS=""; printf "'%s' != '%s'" "$CHURL" "$URL"
-  echo "CANNOT PROCEED..."
-  exit 1
-}
+  [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
+    . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" # source authkeys...
+  } || {
+    echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
+  }
+  export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
+  CHURL=$(curl -sH "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" | jq .url -r | sed 's/users.*//')
+  [ "$CHURL" != "$URL" ] && {
+    echo "ERROR: CHURL AND URL DO NOT MATCH... POSSIBLE VERIFICATION ISSUE"
+    IFS=""; printf "'%s' != '%s'" "$CHURL" "$URL"
+    echo "CANNOT PROCEED..."
+    exit 1
+  }
+  [ $USERKEY ] || { echo '$USERKEY IS EMPTY?? AUTH ERROR... FAILING...'; exit 1; }
+  [ "$1" ] && { echo "$USERKEY"; exit 0; } 
 }
 usage() {
   cat << 'EOF'
@@ -43,13 +41,14 @@ Usage:
     - Prints the contents of <> timeline to stdout
   ./fedish gen <URL>
     - Outputs gen info used by "https://www.thatgeekyweeb.is-dummy-thi.cc/fedish/" for setup
-    - <URL>: Must be set, this the base domain of your pleroma instance, prefixed with `http(s)://`
+    - <URL>: Must be set, is the base domain of your pleroma instance, prefixed with `http(s)://`
 ---
 EOF
 }
 runpost() {
   postemp=$(mktemp); cat > $postemp
   IFS=""; printf 'POST IS:\n%s' "$(cat $postemp)"; echo
+  ## Media handling
   [ "$1" ] && [ "$1" = "media" ] && [ "$2" ] || { echo "MEDIA SET, BUT LOCATION EMPTY... CANNOT CONTINUE..."; exit 1; } && {
     unset IFS
     ls $2 >/dev/null && {
@@ -57,21 +56,24 @@ runpost() {
       MID="=$(curl -sX "POST" -L -H "Authorization: Bearer $USERKEY" -F file=@${2} "${URL}/api/v1/media" | jq .id -r)"
       echo "$MID"
     } || { echo "$2 DOES NOT EXIST!?... FAILING"; exit 1; } 
-  }   
+  }
+  ##
   curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(cat $postemp)" -L "${URL}/api/v1/statuses" -d media_ids[]${MID} >/dev/null
+  # $MID is empty when $1 != media, but is equal to `=ID` when media is enabled
+  # -d media_ids[] # Has no effect, but `=null` or `=` causes a server error 
   rm $postemp
 }
 tm() {
   curl -H "Authorization: Bearer $USERKEY" -Ls "$URL//api/v1/timelines/${1:-home}?local=${2:-false}" | { 
-    jq | {
-      jq '.[] | [.account["username"],.content,.media_attachments[].url]' -r | { 
+    jq '.[] | [.account["username"],.content,.media_attachments[].url]' -r | { 
        tr '\n' '~' | sed -e 's/"//g' -e '/\[/{s//######/;:a' -e '$!N;$!ba' -e '}' -e 's/~\[/~######/g' -e 's/\]~/######~/g' -e 's/\,~/:~/g' | tr '~' '\n' | sed -e '/^$/d' -e 's/^[[:blank:]]*//g' -e '/null/d' -e 's/:[[:blank:]][[:blank:]]/: /' -e 's/<span>//g' -e 's/<\/span>//g' | pup 'text{}' -p | tr '\n' '~' | sed -e 's/~:~/~/g' -e 's/~ //g' -e 's/:~~/:~/g' -e 's/~~######/~######/g' -e 's/######~~/######~/g' | tr '~' '\n'
-      }
-    } 
-  }
+    }
+  } 
 }
 ####
 # Begin
+[ "$2" = "help" -o "$1" = "help" ] 2>/dev/null && { usage; exit 0; } 
+[ "$(basename $0)" = "fedish" -a "$1" != "gen" ] && { usage; exit 1; }
 deps
 case "$1" in
   'gen')
@@ -79,18 +81,14 @@ case "$1" in
     exit 0
     ;;
   'userkey')
-    auth; [ $USERKEY ] && { echo "$USERKEY"; exit 0; } || { echo "USERKEY IS EMPTY... FAILING..."; exit 1; }
+    auth _ # _ is Placeholder
     ;;
-  '?'|'help'|'h'|'-h'|'--help')
+  '?'|'h'|'-h'|'--help')
     usage; exit 0
     ;;
   *)
-    auth; [ $USERKEY ] || { echo "USERKEY IS EMPTY... FAILING..."; exit 1; }
+    auth
     case "$(basename $0)" in
-      fedish)
-        usage
-        exit 1
-        ;;
       post)
         case "$1" in
           'help')
@@ -105,15 +103,12 @@ case "$1" in
         esac
         ;;
       home)
-        [ "$2" ] && [ "$2" = "help" ] && { usage; exit 0; }
         tm "home"
         ;;
       public)
-        [ "$2" ] && [ "$2" = "help" ] && { usage; exit 0; }
         tm "public"
         ;;
       local)
-        [ "$2" ] && [ "$2" = "help" ] && { usage; exit 0; }
         tm "public" "true"
         ;;
     esac
