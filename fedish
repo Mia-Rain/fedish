@@ -6,7 +6,7 @@ has() {
 }
 deps() {
   missing=0
-  for i in jq curl; do
+  for i in jq curl pup; do
     has $i || {
       echo "$i is missing"; missing=$(($missing + 1))
     }
@@ -22,7 +22,13 @@ auth() {
    echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
 }
 export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
-curl -sX "GET" -H "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" 
+CHURL=$(curl -sH "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" | jq .url -r | sed 's/users.*//')
+[ "$CHURL" != "$URL" ] && {
+  echo "ERROR: CHURL AND URL DO NOT MATCH... POSSIBLE VERIFICATION ISSUE"
+  IFS=""; printf "'%s' != '%s'" "$CHURL" "$URL"
+  echo "CANNOT PROCEED..."
+  exit 1
+}
 }
 usage() {
   cat << 'EOF'
@@ -38,14 +44,12 @@ Usage:
     Takes piped string, and attempts to create a post from it's contents
   <DIR>/timeline/<>:
     When ran, will attempt to return the timeline of <> to stdout
-  # Missing ATM...
   ./fedish gen <URL>
     Generate a new app using <URL> as the instance URL
 ---
 EOF
 }
 runpost() {
-  [ "$1" = "help" ] && { usage; exit 0; }
   postemp=$(mktemp); cat > $postemp 
   grep . -q $postemp && { 
     # check if pipe is empty..
@@ -59,20 +63,52 @@ runpost() {
 
 ####
 # Begin
+tm() {
+  curl -H "Authorization: Bearer $USERKEY" -Ls "$URL//api/v1/timelines/${1:-home}?local=${2:-false}" | { 
+    jq | {
+      jq '.[] | [.account["username"],.content,.media_attachments[].url]' -r | { 
+       tr '\n' '~' | sed -e 's/"//g' -e '/\[/{s//######/;:a' -e '$!N;$!ba' -e '}' -e 's/~\[/~######/g' -e 's/\]~/######~/g' -e 's/\,~/:~/g' | tr '~' '\n' | sed -e '/^$/d' -e 's/^[[:blank:]]*//g' -e '/null/d' -e 's/:[[:blank:]][[:blank:]]/: /' -e 's/<span>//g' -e 's/<\/span>//g' | pup 'text{}' -p | tr '\n' '~' | sed -e 's/~:~/~/g' -e 's/~ //g' -e 's/:~~/:~/g' -e 's/~~######/~######/g' -e 's/######~~/######~/g' | tr '~' '\n'
+      }
+    } 
+  }
+}
+####
+# Begin
 deps
-[ "$1" = 'gen' ] || auth
-[ $USERKEY ] || { echo "USERKEY IS EMPTY... FAILING..."; exit 1; }
-[ "$1" = "gen" ] && {
-  curl -X POST -d client_name=fedish -d redirect_uris="https://thatgeekyweeb.is-dummy-thi.cc/fedish/callback" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
-  exit 0
-}  
-case "$(basename $0)" in
-  fedish)
-    usage
-    exit 1
+case "$1" in
+  'gen')
+    curl -X POST -d client_name=fedish -d redirect_uris="https://thatgeekyweeb.is-dummy-thi.cc/fedish/callback" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
+    exit 0
     ;;
-  post)
-    echo "Postin'..."
-    runpost "$@"
+  'userkey')
+    auth; [ $USERKEY ] && { echo "$USERKEY"; exit 0; } || { echo "USERKEY IS EMPTY... FAILING..."; exit 1; }
+    ;;
+  '?'|'help'|'h'|'-h'|'--help')
+    usage; exit 0
+    ;;
+  *)
+    auth; [ $USERKEY ] || { echo "USERKEY IS EMPTY... FAILING..."; exit 1; }
+    case "$(basename $0)" in
+      fedish)
+        usage
+        exit 1
+        ;;
+      post)
+        [ "$2" ] && [ $2 = "help" ] && { usage; exit 0; }  
+        runpost
+        ;;
+      home)
+        [ "$2" ] && [ "$2" = "help" ] && { usage; exit 0; }
+        tm "home"
+        ;;
+      public)
+        [ "$2" ] && [ "$2" = "help" ] && { usage; exit 0; }
+        tm "public"
+        ;;
+      local)
+        [ "$2" ] && [ "$2" = "help" ] && { usage; exit 0; }
+        tm "public" "true"
+        ;;
+    esac
     ;;
 esac
