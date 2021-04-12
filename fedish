@@ -36,33 +36,31 @@ Fedish:
   ~ POSIX sh pleroma client
     ~ THERE IS NO MASTODON SUPPORT. THIS IS DUE TO IT'S API LACKING REFRESH_TOKEN's
 Usage:
-  echo "THIS IS A POST..." | <DIR>/post
----
-  Fedish is operated using a system of symlinks to the file & the use of $0
----
-  <DIR>/post:
-    Takes piped string, and attempts to create a post from it's contents
-  <DIR>/timeline/<>:
-    When ran, will attempt to return the timeline of <> to stdout
+  echo "THIS IS A POST" | ./post [MEDIA] <LOCATION OF MEDIA>
+    - Makes a post with the contents of the pipe
+    - [MEDIA]: Can be set to enable posting of media, location of said media is required...
+  ./timelines/[home|local|public]
+    - Prints the contents of <> timeline to stdout
   ./fedish gen <URL>
-    Generate a new app using <URL> as the instance URL
+    - Outputs gen info used by "https://www.thatgeekyweeb.is-dummy-thi.cc/fedish/" for setup
+    - <URL>: Must be set, this the base domain of your pleroma instance, prefixed with `http(s)://`
 ---
 EOF
 }
 runpost() {
-  postemp=$(mktemp); cat > $postemp 
-  grep . -q $postemp && { 
-    # check if pipe is empty..
-    IFS=""; printf 'POST IS:\n%s' "$(cat $postemp)"; echo
-    curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(cat $postemp)" -L "${URL}/api/v1/statuses" >/dev/null 2>&1
-  } || {
-    echo "PIPE WAS FOUND TO BE EMPTY, CANNOT POST..."; exit 1
-  }
+  postemp=$(mktemp); cat > $postemp
+  IFS=""; printf 'POST IS:\n%s' "$(cat $postemp)"; echo
+  [ "$1" ] && [ "$1" = "media" ] && [ "$2" ] || { echo "MEDIA SET, BUT LOCATION EMPTY... CANNOT CONTINUE..."; exit 1; } && {
+    unset IFS
+    ls $2 >/dev/null && {
+      echo "Adding $2 as post media"
+      MID="=$(curl -sX "POST" -L -H "Authorization: Bearer $USERKEY" -F file=@${2} "${URL}/api/v1/media" | jq .id -r)"
+      echo "$MID"
+    } || { echo "$2 DOES NOT EXIST!?... FAILING"; exit 1; } 
+  }   
+  curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(cat $postemp)" -L "${URL}/api/v1/statuses" -d media_ids[]${MID} >/dev/null
   rm $postemp
 }
-
-####
-# Begin
 tm() {
   curl -H "Authorization: Bearer $USERKEY" -Ls "$URL//api/v1/timelines/${1:-home}?local=${2:-false}" | { 
     jq | {
@@ -94,8 +92,17 @@ case "$1" in
         exit 1
         ;;
       post)
-        [ "$2" ] && [ $2 = "help" ] && { usage; exit 0; }  
-        runpost
+        case "$1" in
+          'help')
+            usage; exit 0
+            ;;
+          'media')
+            runpost "media" $2
+            ;;
+          *)
+            runpost
+            ;;
+        esac
         ;;
       home)
         [ "$2" ] && [ "$2" = "help" ] && { usage; exit 0; }
@@ -112,3 +119,4 @@ case "$1" in
     esac
     ;;
 esac
+####
