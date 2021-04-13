@@ -49,7 +49,7 @@ runpost() {
   postemp=$(mktemp); cat > $postemp
   IFS=""; printf 'POST IS:\n%s' "$(cat $postemp)"; echo
   ## Media handling
-  [ "$1" ] && [ "$1" = "media" ] && [ "$2" ] || { echo "MEDIA SET, BUT LOCATION EMPTY... CANNOT CONTINUE..."; exit 1; } && {
+  [ "$1" = "media" -a "$2" ] 2>/dev/null && {
     unset IFS
     ls $2 >/dev/null && {
       echo "Adding $2 as post media"
