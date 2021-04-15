@@ -30,7 +30,7 @@ function grab() {
             window.CLID +
             "&scope=" +
             scopes +
-            "&redirect_uri=https://thatgeekyweeb.is-dummy-thi.cc/fedish/callback" +
+            "&redirect_uri=https://thatgeekyweeb.github.io/fedish/callback" +
             "&response_type=code"
         );
       });
