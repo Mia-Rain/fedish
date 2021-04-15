@@ -12,7 +12,7 @@ $ ./fedish gen "<INSTANCE URL (WITH HTTP(S)://)>"
   "client_secret": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
   "id": "XXX",
   "name": "fedish",
-  "redirect_uri": "https://thatgeekyweeb.is-dummy-thi.cc/fedish/callback",
+  "redirect_uri": "https://thatgeekyweeb.github.io/fedish/callback",
   "website": null,
   "vapid_key": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 }
