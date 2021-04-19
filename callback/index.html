@@ -37,16 +37,16 @@ if ( sessionStorage.getItem('refresh_token') == "null" && sessionStorage.getItem
   sessionStorage.setItem("refresh_token", sessionStorage.getItem("access_token"));
   window.refresh_token = sessionStorage.getItem('refresh_token');
   console.log(window.refresh_token);
-  document.getElementById("authkey").innerText= 'AUTHKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
+  document.getElementById("authkey").innerText= 'AUTHKEY=' + sessionStorage.getItem('access_token') + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
   if (document.getElementById("authkey").innerText.includes("null")) {
-     document.getElementById("authkey").innerText= 'AUTHKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
+     document.getElementById("authkey").innerText= 'AUTHKEY=' + sessionStorage.getItem('access_token') + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
   }
 } else {
   window.refresh_token = sessionStorage.getItem('refresh_token');
   console.log(window.refresh_token);
-  document.getElementById("authkey").innerText= 'REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
+  document.getElementById("authkey").innerText= 'REKEY=' +sessionStorage.getItem('refresh_token') + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
   if (document.getElementById("authkey").innerText.includes("null")) {
-     document.getElementById("authkey").innerText= 'REKEY=' + authT.refresh_token + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
+     document.getElementById("authkey").innerText= 'REKEY=' + sessionStorage.getItem('refresh_token') + '\nCLID=' + CLID + '\nCLSEC=' + CLSEC + '\nURL=' + URL;
   }
 }
 
