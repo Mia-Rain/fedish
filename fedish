@@ -17,8 +17,16 @@ auth() {
   } || {
     echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
   }
-  export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
-  CHURL=$(curl -sH "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" | jq .url -r | sed 's/users.*//')
+  [ ! $AUTHKEY ] && { 
+    export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
+  } || {
+    export USERKEY=$AUTHKEY
+  }
+  CHURL=$(curl -sH "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" | jq .url -r | sed -e 's/users.*//' -e 's/@.*//')
+  ## handle trailing slash
+    while [ "${URL%/}" != "$URL" ]; do URL="${URL%/}"; done
+    while [ "${CHURL%/}" != "$CHURL" ]; do CHURL="${CHURL%/}"; done
+  ##
   [ "$CHURL" != "$URL" ] && {
     echo "ERROR: CHURL AND URL DO NOT MATCH... POSSIBLE VERIFICATION ISSUE"
     IFS=""; printf "'%s' != '%s'" "$CHURL" "$URL"
@@ -31,8 +39,7 @@ auth() {
 usage() {
   cat << 'EOF'
 Fedish: 
-  ~ POSIX sh pleroma client
-    ~ THERE IS NO MASTODON SUPPORT. THIS IS DUE TO IT'S API LACKING REFRESH_TOKEN's
+  ~ POSIX sh fediverse client
 Usage:
   echo "THIS IS A POST" | ./post [MEDIA] <LOCATION OF MEDIA>
     - Makes a post with the contents of the pipe
@@ -41,7 +48,7 @@ Usage:
     - Prints the contents of <> timeline to stdout
   ./fedish gen <URL>
     - Outputs gen info used by "https://www.thatgeekyweeb.is-dummy-thi.cc/fedish/" for setup
-    - <URL>: Must be set, is the base domain of your pleroma instance, prefixed with `http(s)://`
+    - <URL>: Must be set, is the base domain of your instance, prefixed with `http(s)://`
 ---
 EOF
 }
@@ -65,19 +72,29 @@ runpost() {
 }
 tm() {
   curl -H "Authorization: Bearer $USERKEY" -Ls "$URL//api/v1/timelines/${1:-home}?local=${2:-false}" | { 
-    jq '.[] | [.account["username"],.content,.media_attachments[].url]' -r | { 
-       tr '\n' '~' | sed -e 's/"//g' -e '/\[/{s//######/;:a' -e '$!N;$!ba' -e '}' -e 's/~\[/~######/g' -e 's/\]~/######~/g' -e 's/\,~/:~/g' | tr '~' '\n' | sed -e '/^$/d' -e 's/^[[:blank:]]*//g' -e '/null/d' -e 's/:[[:blank:]][[:blank:]]/: /' -e 's/<span>//g' -e 's/<\/span>//g' | pup 'text{}' -p | tr '\n' '~' | sed -e 's/~:~/~/g' -e 's/~ //g' -e 's/:~~/:~/g' -e 's/~~######/~######/g' -e 's/######~~/######~/g' | tr '~' '\n'
+    jq '.[] | [.account["username"],.content,.media_attachments[].url,.id]' -r | { 
+       sed 's/~/FEDISHMARK/g' | tr '\n' '~' | sed -e 's/"//g' -e '/\[/{s//######/;:a' -e '$!N;$!ba' -e '}' -e 's/~\[/~######/g' -e 's/\]~/######~/g' -e 's/\,~/:~/g' | tr '~' '\n' | sed -e '/^$/d' -e 's/^[[:blank:]]*//g' -e '/null/d' -e 's/:[[:blank:]][[:blank:]]/: /' -e 's/<span>//g' -e 's/<\/span>//g' | pup 'text{}' -p | tr '\n' '~' | sed -e 's/~:~/~/g' -e 's/~ //g' -e 's/:~~/:~/g' -e 's/~~######/~######/g' -e 's/######~~/######~/g' | tr '~' '\n' | sed 's/FEDISHMARK/~/g'
     }
   } 
+}
+act() {
+  case $2 in
+    star|fav|favourite)
+      curl -sX "POST" -H "Authorization: Bearer $USERKEY" -L "$URL/api/v1/statuses/${1}/favourite" >/dev/null
+    ;;
+    boost|reblog)
+      curl -sX "POST" -H "Authorization: Bearer $USERKEY" -L "$URL/api/v1/statuses/${1}/reblog" >/dev/null
+    ;;
+  esac
 }
 ####
 # Begin
 [ "$2" = "help" -o "$1" = "help" ] 2>/dev/null && { usage; exit 0; } 
-[ "$(basename $0)" = "fedish" -a "$1" != "gen" ] && { usage; exit 1; }
+[ "$(basename $0)" = "fedish" -a "$1" != "gen" -a "$1" != "userkey" ] && { usage; exit 1; }
 deps
 case "$1" in
   'gen')
-    curl -X POST -d client_name=fedish -d redirect_uris="https://thatgeekyweeb.is-dummy-thi.cc/fedish/callback" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
+    curl -X POST -d client_name=fedish -d redirect_uris="${3:-https://thatgeekyweeb.github.io/fedish/callback}" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
     exit 0
     ;;
   'userkey')
@@ -110,6 +127,10 @@ case "$1" in
         ;;
       local)
         tm "public" "true"
+        ;;
+      interact)
+        [ ! "$1" ] && { echo "POST ID MISSING?!... FAILING BEFORE I KILL FEDI"; exit 1; }
+        act "$1" "${2:-star}"
         ;;
     esac
     ;;

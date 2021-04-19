@@ -1,6 +1,5 @@
 # fedish
-Fedish is a POSIX sh client for Pleroma
-  > There is not mastodon support... this is due to API issues...
+Fedish is a POSIX sh client for the Fediverse!
 # Setup
 
 ```
