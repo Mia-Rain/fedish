@@ -33,7 +33,7 @@ const URL = sessionStorage.getItem('URL');
   },
 });
 
-if ( sessionStorage.getItem('refresh_token') == "null" && sessionStorage.getItem('access_token') != "null" ) {
+if !(sessionStorage.getItem('refresh_token') && !sessionStorage.getItem('access_token')) {
   sessionStorage.setItem("refresh_token", sessionStorage.getItem("access_token"));
   window.refresh_token = sessionStorage.getItem('refresh_token');
   console.log(window.refresh_token);
