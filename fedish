@@ -44,11 +44,22 @@ Usage:
   echo "THIS IS A POST" | ./post [MEDIA] <LOCATION OF MEDIA>
     - Makes a post with the contents of the pipe
     - [MEDIA]: Can be set to enable posting of media, location of said media is required...
+    - <LOCATION OF MEDIA>: Local location of media
+      - IE: ./blank.png
   ./timelines/[home|local|public]
     - Prints the contents of <> timeline to stdout
+      - IE: ./timelines/home
+  ./interact <ID> [ACTION]
+    - Interacts with a post!
+    - <ID>: Interacts with this post
+    - [ACTION]: Type of interaction:
+      - [star|fav] & [boost|reblog]
   ./fedish gen <URL>
-    - Outputs gen info used by "https://www.thatgeekyweeb.is-dummy-thi.cc/fedish/" for setup
+    - Outputs gen info used by "https://www.thatgeekyweeb.github.io/fedish/" for setup
     - <URL>: Must be set, is the base domain of your instance, prefixed with `http(s)://`
+      - IE: ./fedish gen "https://disqordia.space/"
+  ./fedish help
+    - Prints this silly uwu
 ---
 EOF
 }
