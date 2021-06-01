@@ -22,7 +22,7 @@ auth() {
   } || {
     export USERKEY=$AUTHKEY
   }
-  CHURL=$(curl -sH "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" | jq .url -r | sed -e 's/users.*//' -e 's/@.*//')
+  CHURL=$(curl -sH "Authorization: Bearer $USERKEY" -L "${URL}/api/v1/accounts/verify_credentials" | jq .url -r | sed -E -e 's/users.*//' -e 's/@.*//')
   ## handle trailing slash
     while [ "${URL%/}" != "$URL" ]; do URL="${URL%/}"; done
     while [ "${CHURL%/}" != "$CHURL" ]; do CHURL="${CHURL%/}"; done
@@ -84,7 +84,7 @@ runpost() {
 tm() {
   curl -H "Authorization: Bearer $USERKEY" -Ls "$URL//api/v1/timelines/${1:-home}?local=${2:-false}" | { 
     jq '.[] | [.account["username"],.content,.media_attachments[].url,.id]' -r | { 
-       sed 's/~/FEDISHMARK/g' | tr '\n' '~' | sed -e 's/"//g' -e '/\[/{s//######/;:a' -e '$!N;$!ba' -e '}' -e 's/~\[/~######/g' -e 's/\]~/######~/g' -e 's/\,~/:~/g' | tr '~' '\n' | sed -e '/^$/d' -e 's/^[[:blank:]]*//g' -e '/null/d' -e 's/:[[:blank:]][[:blank:]]/: /' -e 's/<span>//g' -e 's/<\/span>//g' | pup 'text{}' -p | tr '\n' '~' | sed -e 's/~:~/~/g' -e 's/~ //g' -e 's/:~~/:~/g' -e 's/~~######/~######/g' -e 's/######~~/######~/g' | tr '~' '\n' | sed 's/FEDISHMARK/~/g'
+       sed -E 's/~/FEDISHMARK/g' | tr '\n' '~' | sed -E -e 's/"//g' -e '/\[/{s//######/;:a' -e '$!N;$!ba' -e '}' -e 's/~\[/~######/g' -e 's/\]~/######~/g' -e 's/\,~/:~/g' | tr '~' '\n' | sed -E -e '/^$/d' -e 's/^[[:blank:]]*//g' -e '/null/d' -e 's/:[[:blank:]][[:blank:]]/: /' -e 's/<span>//g' -e 's/<\/span>//g' | pup 'text{}' -p | tr '\n' '~' | sed -E -e 's/~:~/~/g' -e 's/~ //g' -e 's/:~~/:~/g' -e 's/~~######/~######/g' -e 's/######~~/######~/g' | tr '~' '\n' | sed -E 's/FEDISHMARK/~/g'
     }
   } 
 }
