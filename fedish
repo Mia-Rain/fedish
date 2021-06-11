@@ -12,10 +12,11 @@ deps() {
   done
 }
 auth() {
-  [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
-    . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" # source authkeys...
-  } || {
-    echo "AUTHKEYS FILE MISSING... CANNOT PROCEED"; exit 1
+  [ -f ./authkeys ] && { . ./authkeys; }
+  [ "$URL" ] || { # checks if ./authkeys was sourced, ignoring ~/.cache/fedish/authkeys if it was
+    [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
+      . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys"
+    }
   }
   [ ! $AUTHKEY ] && { 
     export USERKEY=$(curl -sX "POST" -d client_id=$CLID -d client_secret=$CLSEC -d grant_type="refresh_token" -d refresh_token=$REKEY -L "${URL}/oauth/token" | jq .access_token -r)
