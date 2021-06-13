@@ -4,6 +4,12 @@ has() {
     alias*|"") return 1
   esac
 }
+shcat(){
+  out="$(while read -r p; do
+    IFS=""; echo "$p"
+  done <&0)"; IFS=""; echo "$out"
+} # puresh cat replacement
+# input handling is done a on per call basis
 deps() {
   missing=0
   for i in jq curl pup; do
@@ -38,7 +44,7 @@ auth() {
   [ "$1" ] && { echo "$USERKEY"; exit 0; } 
 }
 usage() {
-  cat << 'EOF'
+  shcat << 'EOF'
 Fedish: 
   ~ POSIX sh fediverse client
 Usage:
@@ -65,8 +71,8 @@ Usage:
 EOF
 }
 runpost() {
-  postemp=$(mktemp); cat > $postemp
-  IFS=""; printf 'POST IS:\n%s' "$(cat $postemp)"; echo
+  postemp=$(mktemp); shcat > $postemp
+  IFS=""; printf 'POST IS:\n%s' "$(shcat < $postemp)"; echo
   ## Media handling
   [ "$1" = "media" -a "$2" ] 2>/dev/null && {
     unset IFS
@@ -77,7 +83,7 @@ runpost() {
     } || { echo "$2 DOES NOT EXIST!?... FAILING"; exit 1; } 
   }
   ##
-  curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(cat $postemp)" -L "${URL}/api/v1/statuses" -d media_ids[]${MID} >/dev/null
+  curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(shcat < $postemp)" -L "${URL}/api/v1/statuses" -d media_ids[]${MID} >/dev/null
   # $MID is empty when $1 != media, but is equal to `=ID` when media is enabled
   # -d media_ids[] # Has no effect, but `=null` or `=` causes a server error 
   rm $postemp
