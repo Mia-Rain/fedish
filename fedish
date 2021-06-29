@@ -5,11 +5,12 @@ has() {
   esac
 }
 shcat(){
-  out="$(while read -r p; do
+  `out="$(while read -r p || [ -n "$p" ]; do 
     IFS=""; echo "$p"
   done <&0)"; IFS=""; echo "$out"
 } # puresh cat replacement
 # input handling is done a on per call basis
+
 deps() {
   missing=0
   for i in jq curl pup; do
