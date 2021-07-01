@@ -5,7 +5,7 @@ has() {
   esac
 }
 shcat(){
-  `out="$(while read -r p || [ -n "$p" ]; do 
+  out="$(while read -r p || [ -n "$p" ]; do 
     IFS=""; echo "$p"
   done <&0)"; IFS=""; echo "$out"
 } # puresh cat replacement
