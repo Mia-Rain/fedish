@@ -16,7 +16,7 @@ $ ./fedish gen "<INSTANCE URL (WITH HTTP(S)://)>"
   "vapid_key": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 }
 ```
-2. Head to the [fedish webapp](https://thatgeekyweeb.github.io/fedish/)  
+2. Head to the [fedish webapp](https://unix.lgbt/~mia/fedish/)  
 3. Press "start", and input the requested data from the info `./fedish gen <>` returned
 4. Authorize fedish
 5. Copy and paste the data on screen to `~/.cache/fedish/authkeys`

@@ -63,7 +63,7 @@ Usage:
     - [ACTION]: Type of interaction:
       - [star|fav] & [boost|reblog]
   ./fedish gen <URL>
-    - Outputs gen info used by "https://www.thatgeekyweeb.github.io/fedish/" for setup
+    - Outputs gen info used by "https://unix.lgbt/~mia/fedish/" for setup
     - <URL>: Must be set, is the base domain of your instance, prefixed with `http(s)://`
       - IE: ./fedish gen "https://disqordia.space/"
   ./fedish help
@@ -113,7 +113,7 @@ act() {
 deps
 case "$1" in
   'gen')
-    curl -X POST -d client_name=fedish -d redirect_uris="${3:-https://thatgeekyweeb.github.io/fedish/callback}" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
+    curl -X POST -d client_name=fedish -d redirect_uris="${3:-https://unix.lgbt/~mia/fedish/callback}" -d scopes='read write follow push' -Ls "$2/api/v1/apps" | jq 
     exit 0
     ;;
   'userkey')
