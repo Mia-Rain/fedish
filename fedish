@@ -10,7 +10,6 @@ shcat(){
   done <&0)"; IFS=""; echo "$out"
 } # puresh cat replacement
 # input handling is done a on per call basis
-
 deps() {
   missing=0
   for i in jq curl pup; do
@@ -62,6 +61,10 @@ Usage:
     - <ID>: Interacts with this post
     - [ACTION]: Type of interaction:
       - [star|fav] & [boost|reblog]
+  ./dl <USER>
+    - Reads all posts from $1
+    - <USER>: User to rip from
+      - USER is found at $URL/SETUP INSTANCE
   ./fedish gen <URL>
     - Outputs gen info used by "https://unix.lgbt/~mia/fedish/" for setup
     - <URL>: Must be set, is the base domain of your instance, prefixed with `http(s)://`
@@ -106,6 +109,33 @@ act() {
     ;;
   esac
 }
+rdl(){
+  # $2 = INST || $URL = INST
+  # INST should be full link
+  # $1 = USER || REQUIRED
+  [ "$1" ] || { echo '$1/USER is required... Death from above...'; exit 1; }
+  
+  mkdir pages 2>/dev/null
+  ap="-" # all data happens in loop so $ap is unset before loop begins
+  pn=1; n=1; while [ "$ap" ]; do # until no new posts    
+    [ "$lid" ] && {
+      adl=$(curl -H "Authorization: Bearer $USERKEY" -Ls "${URL}/api/v1/accounts/$1/statuses?exclude_reblogs=true&exclude_replies=false&limit=39&max_id=$lid" | jq -M)
+    } || { 
+      adl=$(curl -H "Authorization: Bearer $USERKEY" -Ls "${URL}/api/v1/accounts/$1/statuses?exclude_reblogs=true&exclude_replies=false&limit=39" | jq -M)
+    }
+    lid=$(printf '%s\n' "$adl" | jq '.[-1].id' -r)
+    ap=$(printf '%s\n' "$adl" | jq '.[] | .pleroma.content."text/plain"' -r)
+    echo "Writing to; pages/page-$pn"
+    while read -r p || [ -n "$p" ]; do
+      [ "$p" ] && { printf '%s:%s\n' "$n" "$p"; }
+      : $((n+=1))
+    done << EOF > pages/page-"$pn"
+$(printf '%s' "$ap")
+EOF
+  : $((pn+=1))
+  done
+  unset n pn
+}
 ####
 # Begin
 [ "$2" = "help" -o "$1" = "help" ] 2>/dev/null && { usage; exit 0; } 
@@ -125,6 +155,9 @@ case "$1" in
   *)
     auth
     case "${0##*/}" in
+      dl)
+        rdl "$@"
+      ;;
       post)
         case "$1" in
           'help')
