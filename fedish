@@ -75,16 +75,20 @@ runpost() {
   postemp=$(mktemp); shcat > $postemp
   IFS=""; printf 'POST IS:\n%s' "$(shcat < $postemp)"; echo
   ## Media handling
-  [ "$1" = "media" -a "$2" ] 2>/dev/null && {
+  if [ "$1" = "media" -a "$2" ]; then
     unset IFS
-    ls $2 >/dev/null && {
+    [ -e $2 ] && {
       echo "Adding $2 as post media"
       MID="=$(curl -sX "POST" -L -H "Authorization: Bearer $USERKEY" -F file=@${2} "${URL}/api/v1/media" | jq .id -r)"
       echo "$MID"
     } || { echo "$2 DOES NOT EXIST!?... FAILING"; exit 1; } 
-  }
+  fi
   ##
-  curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(shcat < $postemp)" -L "${URL}/api/v1/statuses" -d media_ids[]${MID} >/dev/null
+  if [ "$1" != "scope" ]; then
+    curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(shcat < $postemp)" -L "${URL}/api/v1/statuses" -d media_ids[]${MID} >/dev/null
+  elif [ "$2" ]; then # post as $2 scope; allowing for unlisted
+    curl -sX "POST" -H "Authorization: Bearer $USERKEY" -d status="$(shcat < $postemp)" -L "${URL}/api/v1/statuses" -d visibility="$2" >/dev/null
+  fi
   # $MID is empty when $1 != media, but is equal to `=ID` when media is enabled
   # -d media_ids[] # Has no effect, but `=null` or `=` causes a server error 
   rm $postemp
@@ -133,8 +137,8 @@ case "$1" in
           'media')
             runpost "media" ${2}
             ;;
-          *)
-            runpost
+          'scope')
+            runpost "scope" "$2"
             ;;
         esac
         ;;
