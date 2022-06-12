@@ -20,6 +20,7 @@ deps() {
 }
 auth() {
   [ -f ./authkeys ] && { . ./authkeys; }
+  [ "$AUTHFILE" ] && { . $AUTHFILE; }
   [ "$URL" ] || { # checks if ./authkeys was sourced, ignoring ~/.cache/fedish/authkeys if it was
     [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys" ] && {
       . "${XDG_CACHE_HOME:-$HOME/.cache/}/fedish/authkeys"
