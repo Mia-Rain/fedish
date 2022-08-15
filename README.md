@@ -1,3 +1,27 @@
+# Deprecation
+> ### Fedish is now considered deprecated.  
+> ---
+It my still work in most ways, however there are know issues with the web auth system.  
+Additionally this is is not pure sh, and will not recieve futher work.  
+> ### Replacements
+> ---
+* [fauth](https://miarain.xyz/mia/fauth) replaces the webapp auth service
+	* In pure sh + curl
+* [posh](https://miarain.xyz/mia/posh) offers a terminal based poster
+	* In pure sh + curl
+
+And there are plans for additional standalone modules  
+The following are currently planned:  
+
+* Timeline handler  
+* Notif daemon  
+* Interaction handler  
+  * /with/ reply support  
+
+These are planned to be pure sh + curl based  
+A wrapper is /not/ planned.  
+
+---
 # fedish
 Fedish is a POSIX sh client for the Fediverse!
 # Setup
